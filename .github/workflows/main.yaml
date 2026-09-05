@@ -72,4 +72,4 @@ jobs:
         run: docker rm manupred-be-app
 
       - name: Rodar novo container
-        run: docker run -d --pull always --name manupred-be-app -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest
+        run: docker run -d --pull always --name manupred-be-app -p 8080:8080 -e DB_HOST=host.docker.internal ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest
