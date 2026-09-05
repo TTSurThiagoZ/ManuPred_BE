@@ -2,12 +2,15 @@ package com.fiec.br.back_end.kipper.features.user.controller;
 
 import com.fiec.br.back_end.kipper.features.user.model.dto.CreateUserRequestDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.TokenRequestDTO;
+import com.fiec.br.back_end.kipper.features.user.model.dto.UserMeDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.UserResponseDTO;
+import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import com.fiec.br.back_end.kipper.features.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,5 +51,11 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserMeDTO> getMe() {
+        Users user = (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return ResponseEntity.ok(new UserMeDTO(user.getEmail(), user.getName()));
     }
 }

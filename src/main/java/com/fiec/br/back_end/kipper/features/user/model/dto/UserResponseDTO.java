@@ -9,7 +9,8 @@ public record UserResponseDTO(
         String name,
         String email,
         String firebaseUid,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
     public static UserResponseDTO fromEntity(Users user) {
         return new UserResponseDTO(
@@ -17,7 +18,8 @@ public record UserResponseDTO(
                 user.getName(),
                 user.getEmail(),
                 user.getFirebaseUid(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         );
     }
 }

@@ -8,6 +8,9 @@ import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import com.fiec.br.back_end.kipper.features.user.repositories.UserRepository;
 import com.fiec.br.back_end.kipper.features.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,15 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // --- Implementação do UserDetailsService para o Spring Security ---
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com E-mail: " + username));
+    }
 
     @Override
     @Transactional
@@ -30,7 +42,7 @@ public class UserServiceImpl implements UserService {
         Users user = Users.builder()
                 .name(dto.name())
                 .email(dto.email())
-                .password(dto.password()) // Em produção, aplicar BCryptPasswordEncoder
+                .password(passwordEncoder.encode(dto.password())) // Senha criptografada com BCrypt
                 .firebaseUid(dto.firebaseUid())
                 .build();
 
