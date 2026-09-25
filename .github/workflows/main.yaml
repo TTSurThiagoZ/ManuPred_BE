@@ -1,4 +1,4 @@
-name: CI Java Maven Docker
+name: CI Java Maven Docker & Kubernetes
 
 on:
   push:
@@ -54,22 +54,13 @@ jobs:
           docker tag manupred_be ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest
 
-  # Job 3: Rodando na AWS
-  deploy-ec2:
+  # Job 3: Implantação no Kubernetes via Runner Self-Hosted
+  deploy-k8s:
     runs-on: self-hosted
     needs: docker-build
-    
     steps:
-      - name: Forçar Pull da imagem nova
-        run: docker pull ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
-      - name: Parar container antigo
-        continue-on-error: true
-        run: docker stop manupred-be-app
-
-      - name: Remover container antigo
-        continue-on-error: true
-        run: docker rm manupred-be-app
-
-      - name: Rodar novo container
-        run: docker run -d --pull always --name manupred-be-app -p 8080:8080 -e DB_HOST=host.docker.internal ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest
+      - name: Aplicar Manifestos no Kubernetes
+        run: kubectl apply -f k8s/deployment.yaml
