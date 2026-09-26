@@ -9,6 +9,7 @@ import com.fiec.br.back_end.kipper.features.user.model.dto.UserResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import com.fiec.br.back_end.kipper.features.user.repositories.UserRepository;
 import com.fiec.br.back_end.kipper.features.user.service.UserService;
+import com.fiec.br.back_end.kipper.exception.RecursoNaoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +28,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    // --- Implementação do UserDetailsService para o Spring Security ---
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
         Users user = Users.builder()
                 .name(dto.name())
                 .email(dto.email())
-                .password(passwordEncoder.encode(dto.password())) // Senha criptografada com BCrypt
+                .password(passwordEncoder.encode(dto.password()))
                 .firebaseUid(dto.firebaseUid())
                 .build();
 
@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponseDTO findById(UUID id) {
         Users user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com ID: " + id));
         return UserResponseDTO.fromEntity(user);
     }
 
@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponseDTO findByEmail(String email) {
         Users user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com E-mail: " + email));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com E-mail: " + email));
         return UserResponseDTO.fromEntity(user);
     }
 
@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(UUID id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado para deleção.");
+            throw new RecursoNaoEncontradoException("Usuário não encontrado para deleção.");
         }
         userRepository.deleteById(id);
     }
@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService {
                             .orElseGet(() -> userRepository.save(Users.builder()
                                     .name(name != null ? name : "Usuário Firebase")
                                     .email(email)
-                                    .password("") // Autenticado via provedor OAuth/Firebase
+                                    .password("")
                                     .firebaseUid(uid)
                                     .build())));
 

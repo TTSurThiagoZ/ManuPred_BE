@@ -18,12 +18,10 @@ public class FileStorageService {
     @Value("${app.upload-dir:uploads}")
     private String uploadDir;
 
-    // Content-Types de imagem aceitos
     private static final List<String> CONTENT_TYPES_IMAGEM = List.of(
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp"
     );
 
-    // Content-Types de CSV aceitos (varia de acordo com o navegador/SO de quem envia)
     private static final List<String> CONTENT_TYPES_CSV = List.of(
             "text/csv", "application/csv", "application/vnd.ms-excel", "text/plain"
     );
@@ -36,12 +34,19 @@ public class FileStorageService {
         validarTipoArquivo(arquivo);
 
         try {
-            Path pastaSolicitacao = Path.of(uploadDir, solicitacaoId.toString());
+            Path pastaSolicitacao = Path.of(uploadDir, solicitacaoId.toString()).toAbsolutePath().normalize();
             Files.createDirectories(pastaSolicitacao);
 
             String nomeOriginal = arquivo.getOriginalFilename() != null ? arquivo.getOriginalFilename() : "arquivo";
-            String nomeArmazenado = UUID.randomUUID() + "_" + nomeOriginal;
-            Path destino = pastaSolicitacao.resolve(nomeArmazenado);
+            // Descarta qualquer caminho embutido no nome enviado pelo cliente (ex: "../../etc/x.jpg"),
+            // mantendo só o nome do arquivo em si, para evitar escrever fora da pasta de uploads.
+            String nomeOriginalSanitizado = Path.of(nomeOriginal).getFileName().toString();
+            String nomeArmazenado = UUID.randomUUID() + "_" + nomeOriginalSanitizado;
+            Path destino = pastaSolicitacao.resolve(nomeArmazenado).normalize();
+
+            if (!destino.startsWith(pastaSolicitacao)) {
+                throw new IllegalArgumentException("Nome de arquivo inválido: " + nomeOriginal);
+            }
 
             try (InputStream in = arquivo.getInputStream()) {
                 Files.copy(in, destino);
@@ -53,11 +58,6 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Só permite anexar imagens (jpg, jpeg, png, gif, webp, bmp) ou arquivos CSV.
-     * Valida tanto pelo content-type informado quanto pela extensão do arquivo,
-     * já que alguns clientes enviam o content-type de forma inconsistente.
-     */
     private void validarTipoArquivo(MultipartFile arquivo) {
         String contentType = arquivo.getContentType() != null
                 ? arquivo.getContentType().toLowerCase(Locale.ROOT)

@@ -7,7 +7,6 @@ import com.fiec.br.back_end.kipper.features.auth.models.dto.TokenResponseDTO;
 import com.fiec.br.back_end.kipper.features.auth.service.AuthService;
 import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import com.fiec.br.back_end.kipper.features.user.repositories.UserRepository;
-import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,11 +29,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void register(RegisterRequestDTO request) {
-        Users user = new Users();
-        user.setName(request.nome());
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setFcmToken(request.fcmToken());
+        if (userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("E-mail já cadastrado no sistema.");
+        }
+
+        Users user = Users.builder()
+                .name(request.nome())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .fcmToken(request.fcmToken())
+                .build();
 
         userRepository.save(user);
     }

@@ -4,6 +4,7 @@ import com.fiec.br.back_end.kipper.features.auth.models.dto.LoginRequestDTO;
 import com.fiec.br.back_end.kipper.features.auth.models.dto.RegisterRequestDTO;
 import com.fiec.br.back_end.kipper.features.auth.models.dto.TokenResponseDTO;
 import com.fiec.br.back_end.kipper.features.auth.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegisterRequestDTO request) {
+    public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequestDTO request) {
         authService.register(request);
         return ResponseEntity.ok().build();
     }

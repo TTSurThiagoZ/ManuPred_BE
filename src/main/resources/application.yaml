@@ -20,3 +20,11 @@ spring:
       max-request-size: 10MB
 server:
   port: 8080
+app:
+  jwt:
+    # Em produção, defina a variável de ambiente JWT_SECRET (>= 32 caracteres aleatórios)
+    secret: ${JWT_SECRET:TrocarPorUmaChaveAleatoriaDeProducaoComPeloMenos32Caracteres}
+  firebase:
+    # Em produção, defina FIREBASE_CREDENTIALS_JSON com o conteúdo do service-account.json
+    credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
+    generated-file-path: ${FIREBASE_CREDENTIALS_PATH:/tmp/firebase-service-account.json}
