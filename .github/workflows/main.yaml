@@ -58,9 +58,26 @@ jobs:
   deploy-k8s:
     runs-on: self-hosted
     needs: docker-build
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Aplicar Manifestos no Kubernetes
-        run: kubectl apply -f k8s/deployment.yaml
+      - name: Parar container antigo
+        continue-on-error: true
+        run: docker stop manupred-be-app
+
+      - name: Remover container antigo
+        continue-on-error: true
+        run: docker rm manupred-be-app
+
+      - name: Rodar novo container
+        run: |
+          docker run -d --pull always --name manupred-be-app -p 8080:8080 \
+            -e DB_HOST=${{ secrets.DB_HOST }} \
+            -e DB_PORT=${{ secrets.DB_PORT }} \
+            -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            -e FIREBASE_CREDENTIALS_JSON='${{ secrets.FIREBASE_CREDENTIALS_JSON }}' \
+            ${{ secrets.DOCKER_USERNAME }}/manupred_be:latest

@@ -1,5 +1,6 @@
 package com.fiec.br.back_end.kipper.features.user.service;
 
+import com.fiec.br.back_end.kipper.features.auth.models.dto.TokenResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.CreateUserRequestDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.UserResponseDTO;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,5 +14,5 @@ public interface UserService extends UserDetailsService {
     UserResponseDTO findByEmail(String email);
     List<UserResponseDTO> findAll();
     void deleteUser(UUID id);
-    UserResponseDTO verifyAndAuthenticateFirebaseToken(String firebaseToken);
+    TokenResponseDTO verifyAndAuthenticateFirebaseToken(String firebaseToken);
 }

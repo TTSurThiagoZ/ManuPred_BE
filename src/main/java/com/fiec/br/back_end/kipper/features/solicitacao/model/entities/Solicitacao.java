@@ -25,7 +25,7 @@ public class Solicitacao extends Auditoria {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, length = 300)
     private String titulo;
 
     @Column(nullable = false, columnDefinition = "TEXT")

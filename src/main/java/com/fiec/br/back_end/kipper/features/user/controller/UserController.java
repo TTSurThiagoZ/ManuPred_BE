@@ -1,5 +1,6 @@
 package com.fiec.br.back_end.kipper.features.user.controller;
 
+import com.fiec.br.back_end.kipper.features.auth.models.dto.TokenResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.CreateUserRequestDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.TokenRequestDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.UserMeDTO;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,23 +32,26 @@ public class UserController {
     }
 
     @PostMapping("/auth/firebase")
-    public ResponseEntity<UserResponseDTO> authenticateWithFirebase(@RequestBody @Valid TokenRequestDTO dto) {
-        UserResponseDTO response = userService.verifyAndAuthenticateFirebaseToken(dto.token());
+    public ResponseEntity<TokenResponseDTO> authenticateWithFirebase(@RequestBody @Valid TokenRequestDTO dto) {
+        TokenResponseDTO response = userService.verifyAndAuthenticateFirebaseToken(dto.token());
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDTO> findById(@PathVariable UUID id) {
         UserResponseDTO response = userService.findById(id);
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> findAll() {
         List<UserResponseDTO> response = userService.findAll();
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);

@@ -15,6 +15,7 @@ import com.fiec.br.back_end.kipper.features.solicitacao.service.FileStorageServi
 import com.fiec.br.back_end.kipper.features.solicitacao.service.SolicitacaoService;
 import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import com.fiec.br.back_end.kipper.features.user.repositories.UserRepository;
+import com.fiec.br.back_end.kipper.exception.RecursoNaoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,8 +23,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +47,9 @@ public class SolicitacaoServiceImpl implements SolicitacaoService {
 
     @Override
     @Transactional
-    public SolicitacaoResponseDTO create(CreateSolicitacaoRequestDTO dto, List<MultipartFile> anexos) {
-        Users solicitante = userRepository.findById(dto.usuarioSolicitanteId())
-                .orElseThrow(() -> new RuntimeException("Usuário solicitante não encontrado."));
+    public SolicitacaoResponseDTO create(CreateSolicitacaoRequestDTO dto, UUID usuarioSolicitanteId, List<MultipartFile> anexos) {
+        Users solicitante = userRepository.findById(usuarioSolicitanteId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário solicitante não encontrado."));
 
         Solicitacao solicitacao = Solicitacao.builder()
                 .titulo(dto.tipo() + " - " + dto.localizacaoProblema())
@@ -78,5 +81,58 @@ public class SolicitacaoServiceImpl implements SolicitacaoService {
         }
 
         return SolicitacaoResponseDTO.fromEntity(salva, anexosSalvos);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SolicitacaoResponseDTO buscarPorId(UUID id) {
+        Solicitacao solicitacao = buscarEntidadePorId(id);
+        List<AnexoResponseDTO> anexos = anexoRepository.findBySolicitacaoId(id).stream()
+                .map(AnexoResponseDTO::fromEntity)
+                .toList();
+        return SolicitacaoResponseDTO.fromEntity(solicitacao, anexos);
+    }
+
+    @Override
+    @Transactional
+    public SolicitacaoResponseDTO atualizarStatus(UUID id, StatusSolicitacao novoStatus) {
+        Solicitacao solicitacao = buscarEntidadePorId(id);
+        solicitacao.setStatus(novoStatus);
+
+        if (novoStatus == StatusSolicitacao.CONCLUIDO || novoStatus == StatusSolicitacao.CANCELADO) {
+            solicitacao.setDataFinalizacao(LocalDateTime.now());
+        } else {
+            solicitacao.setDataFinalizacao(null);
+        }
+
+        return SolicitacaoResponseDTO.fromEntity(solicitacaoRepository.save(solicitacao));
+    }
+
+    @Override
+    @Transactional
+    public SolicitacaoResponseDTO atualizarPrioridade(UUID id, PrioridadeSolicitacao novaPrioridade) {
+        Solicitacao solicitacao = buscarEntidadePorId(id);
+        solicitacao.setPrioridade(novaPrioridade);
+        return SolicitacaoResponseDTO.fromEntity(solicitacaoRepository.save(solicitacao));
+    }
+
+    @Override
+    @Transactional
+    public SolicitacaoResponseDTO atribuirTecnico(UUID id, UUID tecnicoId) {
+        Solicitacao solicitacao = buscarEntidadePorId(id);
+        Users tecnico = userRepository.findById(tecnicoId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Técnico não encontrado com ID: " + tecnicoId));
+
+        solicitacao.setTecnicoResponsavel(tecnico);
+        if (solicitacao.getStatus() == StatusSolicitacao.ABERTO) {
+            solicitacao.setStatus(StatusSolicitacao.EM_ANDAMENTO);
+        }
+
+        return SolicitacaoResponseDTO.fromEntity(solicitacaoRepository.save(solicitacao));
+    }
+
+    private Solicitacao buscarEntidadePorId(UUID id) {
+        return solicitacaoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Solicitação não encontrada com ID: " + id));
     }
 }
