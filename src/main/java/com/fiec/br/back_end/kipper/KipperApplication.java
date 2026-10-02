@@ -10,3 +10,4 @@ public class KipperApplication {
 		SpringApplication.run(KipperApplication.class, args);
 	}
 }
+
