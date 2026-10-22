@@ -3,6 +3,7 @@ package com.fiec.br.back_end.kipper.features.user.service;
 import com.fiec.br.back_end.kipper.features.auth.models.dto.TokenResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.CreateUserRequestDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.UserResponseDTO;
+import com.fiec.br.back_end.kipper.features.user.model.entities.UserRole;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
@@ -15,4 +16,6 @@ public interface UserService extends UserDetailsService {
     List<UserResponseDTO> findAll();
     void deleteUser(UUID id);
     TokenResponseDTO verifyAndAuthenticateFirebaseToken(String firebaseToken);
+    UserResponseDTO atualizarRole(UUID id, UserRole role);
+    void atualizarFcmToken(String email, String fcmToken);
 }

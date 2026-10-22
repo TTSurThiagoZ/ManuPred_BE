@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -38,47 +39,34 @@ public class Users extends Auditoria implements UserDetails {
     private String firebaseUid;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     @Builder.Default
     private UserRole role = UserRole.USER_ROLE;
 
     @Column(name = "fcm_token")
     private String fcmToken;
 
-    // --- Métodos obrigatórios do UserDetails ---
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+
         if (this.role == UserRole.ADMIN_ROLE) {
-            return List.of(
-                    new SimpleGrantedAuthority("ROLE_ADMIN"),
-                    new SimpleGrantedAuthority("ROLE_USER")
-            );
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPERVISOR"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_FUNCIONARIO"));
+        } else if (this.role == UserRole.SUPERVISOR_ROLE) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPERVISOR"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_FUNCIONARIO"));
+        } else if (this.role == UserRole.FUNCIONARIO_ROLE) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_FUNCIONARIO"));
         }
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        return authorities;
     }
 
-    @Override
-    public String getUsername() {
-        return this.email; // Mapeia o e-mail como o identificador de login (username)
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
+    @Override public String getUsername() { return this.email; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 }

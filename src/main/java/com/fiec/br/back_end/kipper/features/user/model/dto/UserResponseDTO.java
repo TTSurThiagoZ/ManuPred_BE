@@ -1,5 +1,6 @@
 package com.fiec.br.back_end.kipper.features.user.model.dto;
 
+import com.fiec.br.back_end.kipper.features.user.model.entities.UserRole;
 import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,6 +10,7 @@ public record UserResponseDTO(
         String name,
         String email,
         String firebaseUid,
+        UserRole role,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -18,6 +20,7 @@ public record UserResponseDTO(
                 user.getName(),
                 user.getEmail(),
                 user.getFirebaseUid(),
+                user.getRole(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

@@ -16,8 +16,10 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   servlet:
     multipart:
+      enabled: true
       max-file-size: 10MB
       max-request-size: 10MB
+      resolve-lazily: false
 server:
   port: 8080
   shutdown: graceful
@@ -39,11 +41,27 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    try-it-out-enabled: true
+    filter: true
+    display-request-duration: true
+    default-models-expand-depth: 1
+    default-model-expand-depth: 1
+  show-actuator: false
 app:
   jwt:
-    # Em produção, defina a variável de ambiente JWT_SECRET (>= 32 caracteres aleatórios)
     secret: ${JWT_SECRET:TrocarPorUmaChaveAleatoriaDeProducaoComPeloMenos32Caracteres}
   firebase:
-    # Em produção, defina FIREBASE_CREDENTIALS_JSON com o conteúdo do service-account.json
     credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
     generated-file-path: ${FIREBASE_CREDENTIALS_PATH:/tmp/firebase-service-account.json}
+  google:
+    # Pega do ambiente, se não tiver usa o do kipper-56bb0 (o seu amigo deve ter mandado o ID no texto, se não, coloque o ID aqui)
+    web-client-id: ${GOOGLE_WEB_CLIENT_ID:355480871385-8q4850tqh2shrf6qkf5li497lgf9m42m.apps.googleusercontent.com}

@@ -34,3 +34,6 @@ build/
 
 # Firebase credentials (nunca commitar)
 **/*firebase*.json
+
+# Fotos dos chamados não vão pro repositório
+uploads/
