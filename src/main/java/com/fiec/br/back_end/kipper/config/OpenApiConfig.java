@@ -36,7 +36,8 @@ import org.springframework.context.annotation.Configuration;
                 )
         ),
         servers = {
-                @Server(url = "http://localhost:8080", description = "Ambiente de Desenvolvimento")
+                // Utilizar "/" faz o Swagger usar a mesma origem (IP/Host e porta) de onde a página foi aberta
+                @Server(url = "/", description = "Servidor Atual")
         },
         security = @SecurityRequirement(name = "bearerAuth")
 )
