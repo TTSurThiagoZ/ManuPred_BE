@@ -12,7 +12,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -34,10 +35,16 @@ public class AuthController {
                     @ApiResponse(responseCode = "400", description = "E-mail já cadastrado ou dados inválidos")
             }
     )
+    @McpTool(name = "registrar_usuario",
+            description = "Cria uma nova conta de usuário com e-mail e senha. A conta nasce com a role USER_ROLE. "
+                    + "Falha se o e-mail já estiver cadastrado.",
+            annotations = @McpTool.McpAnnotations(title = "Registrar usuário",
+                    readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequestDTO request) {
+    public void register(
+            @McpToolParam(description = "Nome, e-mail e senha do novo usuário")
+            @RequestBody @Valid RegisterRequestDTO request) {
         authService.register(request);
-        return ResponseEntity.ok().build();
     }
 
     @Operation(
@@ -63,11 +70,20 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "E-mail ou senha inválidos")
             }
     )
+    @McpTool(name = "login",
+            description = "Autentica com e-mail e senha e devolve um token JWT (válido por 30 minutos) "
+                    + "para ser usado no cabeçalho Authorization: Bearer <token>.",
+            annotations = @McpTool.McpAnnotations(title = "Login com e-mail e senha",
+                    readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login(@RequestBody @Valid LoginRequestDTO request) {
-        return ResponseEntity.ok(authService.login(request));
+    public TokenResponseDTO login(
+            @McpToolParam(description = "E-mail e senha do usuário")
+            @RequestBody @Valid LoginRequestDTO request) {
+        return authService.login(request);
     }
 
+    // Sem @McpTool: o idToken só é gerado pelo SDK do Google no celular/navegador,
+    // então um agente de IA não teria como obtê-lo.
     @Operation(
             summary = "Login via Google Sign-In",
             description = "Recebe o idToken gerado pelo SDK do Google no mobile. Se o usuário não existir, cria automaticamente com USER_ROLE.",
@@ -77,7 +93,7 @@ public class AuthController {
             }
     )
     @PostMapping("/google")
-    public ResponseEntity<TokenResponseDTO> loginComGoogle(@RequestBody @Valid GoogleTokenRequestDTO request) {
-        return ResponseEntity.ok(authService.loginComGoogle(request));
+    public TokenResponseDTO loginComGoogle(@RequestBody @Valid GoogleTokenRequestDTO request) {
+        return authService.loginComGoogle(request);
     }
 }

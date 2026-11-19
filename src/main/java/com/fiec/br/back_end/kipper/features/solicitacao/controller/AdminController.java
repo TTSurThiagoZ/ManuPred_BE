@@ -19,8 +19,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,17 +53,29 @@ public class AdminController {
 
     // ============ TIPOS DE CHAMADO ============
     @Operation(summary = "Listar tipos de chamado")
+    @McpTool(name = "listar_tipos_chamado",
+            description = "Lista os tipos de chamado (ex.: elétrica, hidráulica) com id, nome, ícone, SLA em horas e a "
+                    + "ação ao estourar o SLA. O 'id' é o 'tipoId' exigido por 'criar_chamado'.",
+            annotations = @McpTool.McpAnnotations(title = "Listar tipos de chamado",
+                    readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false))
     // Liberado sem login: o app e o site listam os tipos antes do usuário entrar
     @PreAuthorize("permitAll()")
     @GetMapping("/tipos")
-    public ResponseEntity<List<TipoChamado>> listarTipos() {
-        return ResponseEntity.ok(tipoRepo.findAll());
+    public List<TipoChamado> listarTipos() {
+        return tipoRepo.findAll();
     }
 
     @Operation(summary = "Criar tipo de chamado")
+    @McpTool(name = "criar_tipo_chamado",
+            description = "Cadastra um novo tipo de chamado. O nome deve ser único. Apenas ADMIN.",
+            annotations = @McpTool.McpAnnotations(title = "Criar tipo de chamado",
+                    readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/tipos")
-    public ResponseEntity<TipoChamado> criarTipo(@RequestBody @Valid TipoChamadoDTO dto) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public TipoChamado criarTipo(
+            @McpToolParam(description = "Nome, ícone (opcional), SLA em horas (mínimo 1) e ação ao estourar o SLA (opcional)")
+            @RequestBody @Valid TipoChamadoDTO dto) {
         String nome = dto.nome().trim();
         if (tipoRepo.existsByNome(nome)) throw new IllegalArgumentException("Tipo já existe.");
         TipoChamado t = TipoChamado.builder()
@@ -70,13 +83,21 @@ public class AdminController {
                 .slaHoras(dto.slaHoras()).acaoAoEstourar(dto.acaoAoEstourar()).build();
         TipoChamado salvo = tipoRepo.save(t);
         auditService.registrar("CRIAR_TIPO", "Criou tipo de chamado: " + nome, getUsuarioLogado());
-        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
+        return salvo;
     }
 
     @Operation(summary = "Atualizar tipo de chamado")
+    @McpTool(name = "atualizar_tipo_chamado",
+            description = "Altera nome, ícone, SLA e ação ao estourar de um tipo de chamado existente. "
+                    + "Todos os campos são substituídos. Apenas ADMIN.",
+            annotations = @McpTool.McpAnnotations(title = "Atualizar tipo de chamado",
+                    readOnlyHint = false, destructiveHint = true, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/tipos/{id}")
-    public ResponseEntity<TipoChamado> atualizarTipo(@PathVariable UUID id, @RequestBody @Valid TipoChamadoDTO dto) {
+    public TipoChamado atualizarTipo(
+            @McpToolParam(description = "ID (UUID) do tipo de chamado") @PathVariable UUID id,
+            @McpToolParam(description = "Novos dados do tipo de chamado")
+            @RequestBody @Valid TipoChamadoDTO dto) {
         TipoChamado t = tipoRepo.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Tipo não encontrado."));
         String nome = dto.nome().trim();
@@ -87,13 +108,20 @@ public class AdminController {
         t.setSlaHoras(dto.slaHoras()); t.setAcaoAoEstourar(dto.acaoAoEstourar());
         TipoChamado salvo = tipoRepo.save(t);
         auditService.registrar("EDITAR_TIPO", "Editou tipo: " + nome, getUsuarioLogado());
-        return ResponseEntity.ok(salvo);
+        return salvo;
     }
 
     @Operation(summary = "Deletar tipo de chamado")
+    @McpTool(name = "deletar_tipo_chamado",
+            description = "Apaga um tipo de chamado. Falha se algum chamado usar este tipo. Apenas ADMIN. "
+                    + "Ação irreversível: confirme com o usuário antes.",
+            annotations = @McpTool.McpAnnotations(title = "Deletar tipo de chamado",
+                    readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/tipos/{id}")
-    public ResponseEntity<Void> deletarTipo(@PathVariable UUID id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletarTipo(
+            @McpToolParam(description = "ID (UUID) do tipo de chamado") @PathVariable UUID id) {
         TipoChamado t = tipoRepo.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Tipo não encontrado."));
         // Os chamados guardam só uma referência ao tipo; apagar deixaria chamados sem tipo e sem SLA.
@@ -102,20 +130,30 @@ public class AdminController {
         }
         tipoRepo.deleteById(id);
         auditService.registrar("DELETAR_TIPO", "Deletou tipo: " + t.getNome(), getUsuarioLogado());
-        return ResponseEntity.noContent().build();
     }
 
     // ============ SETORES ============
     @Operation(summary = "Listar setores")
+    @McpTool(name = "listar_setores",
+            description = "Lista os setores (áreas do prédio/empresa) com id, nome e responsável.",
+            annotations = @McpTool.McpAnnotations(title = "Listar setores",
+                    readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @GetMapping("/setores")
-    public ResponseEntity<List<Setor>> listarSetores() {
-        return ResponseEntity.ok(setorRepo.findAll());
+    public List<Setor> listarSetores() {
+        return setorRepo.findAll();
     }
 
     @Operation(summary = "Criar setor")
+    @McpTool(name = "criar_setor",
+            description = "Cadastra um novo setor, opcionalmente com um usuário responsável. O nome deve ser único. Apenas ADMIN.",
+            annotations = @McpTool.McpAnnotations(title = "Criar setor",
+                    readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/setores")
-    public ResponseEntity<Setor> criarSetor(@RequestBody @Valid SetorDTO dto) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Setor criarSetor(
+            @McpToolParam(description = "Nome do setor e, opcionalmente, o ID (UUID) do usuário responsável")
+            @RequestBody @Valid SetorDTO dto) {
         String nome = dto.nome().trim();
         if (setorRepo.existsByNome(nome)) throw new IllegalArgumentException("Setor já existe.");
         Setor s = Setor.builder().nome(nome).build();
@@ -125,13 +163,20 @@ public class AdminController {
         }
         Setor salvo = setorRepo.save(s);
         auditService.registrar("CRIAR_SETOR", "Criou setor: " + nome, getUsuarioLogado());
-        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
+        return salvo;
     }
 
     @Operation(summary = "Deletar setor")
+    @McpTool(name = "deletar_setor",
+            description = "Apaga um setor. Falha se houver locais cadastrados nele. Apenas ADMIN. "
+                    + "Ação irreversível: confirme com o usuário antes.",
+            annotations = @McpTool.McpAnnotations(title = "Deletar setor",
+                    readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/setores/{id}")
-    public ResponseEntity<Void> deletarSetor(@PathVariable UUID id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletarSetor(
+            @McpToolParam(description = "ID (UUID) do setor") @PathVariable UUID id) {
         Setor s = setorRepo.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Setor não encontrado."));
         if (!localRepo.findBySetorId(id).isEmpty()) {
@@ -139,20 +184,31 @@ public class AdminController {
         }
         setorRepo.deleteById(id);
         auditService.registrar("DELETAR_SETOR", "Deletou setor: " + s.getNome(), getUsuarioLogado());
-        return ResponseEntity.noContent().build();
     }
 
     // ============ LOCAIS ============
     @Operation(summary = "Listar locais")
+    @McpTool(name = "listar_locais",
+            description = "Lista os locais (salas, laboratórios, blocos) com id, nome e setor. "
+                    + "O 'id' é o 'localId' aceito por 'criar_chamado' e 'buscar_chamados'.",
+            annotations = @McpTool.McpAnnotations(title = "Listar locais",
+                    readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @GetMapping("/locais")
-    public ResponseEntity<List<Local>> listarLocais() {
-        return ResponseEntity.ok(localRepo.findAll());
+    public List<Local> listarLocais() {
+        return localRepo.findAll();
     }
 
     @Operation(summary = "Criar local")
+    @McpTool(name = "criar_local",
+            description = "Cadastra um novo local, opcionalmente ligado a um setor. Apenas ADMIN.",
+            annotations = @McpTool.McpAnnotations(title = "Criar local",
+                    readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/locais")
-    public ResponseEntity<Local> criarLocal(@RequestBody @Valid LocalDTO dto) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Local criarLocal(
+            @McpToolParam(description = "Nome do local e, opcionalmente, o ID (UUID) do setor")
+            @RequestBody @Valid LocalDTO dto) {
         String nome = dto.nome().trim();
         Local l = Local.builder().nome(nome).build();
         if (dto.setorId() != null) {
@@ -161,13 +217,20 @@ public class AdminController {
         }
         Local salvo = localRepo.save(l);
         auditService.registrar("CRIAR_LOCAL", "Criou local: " + nome, getUsuarioLogado());
-        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
+        return salvo;
     }
 
     @Operation(summary = "Deletar local")
+    @McpTool(name = "deletar_local",
+            description = "Apaga um local. Falha se houver chamados nele. Apenas ADMIN. "
+                    + "Ação irreversível: confirme com o usuário antes.",
+            annotations = @McpTool.McpAnnotations(title = "Deletar local",
+                    readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/locais/{id}")
-    public ResponseEntity<Void> deletarLocal(@PathVariable UUID id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletarLocal(
+            @McpToolParam(description = "ID (UUID) do local") @PathVariable UUID id) {
         Local l = localRepo.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Local não encontrado."));
         if (solicitacaoRepo.existsByLocalId(id)) {
@@ -175,14 +238,17 @@ public class AdminController {
         }
         localRepo.deleteById(id);
         auditService.registrar("DELETAR_LOCAL", "Deletou local: " + l.getNome(), getUsuarioLogado());
-        return ResponseEntity.noContent().build();
     }
 
     // ============ AUDITORIA ============
     @Operation(summary = "Listar logs de auditoria")
+    @McpTool(name = "listar_auditoria",
+            description = "Lista o log de auditoria das ações administrativas (quem fez o quê e quando). Apenas ADMIN.",
+            annotations = @McpTool.McpAnnotations(title = "Logs de auditoria",
+                    readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/auditoria")
-    public ResponseEntity<List<AuditLog>> listarAuditoria() {
-        return ResponseEntity.ok(auditService.listar());
+    public List<AuditLog> listarAuditoria() {
+        return auditService.listar();
     }
 }

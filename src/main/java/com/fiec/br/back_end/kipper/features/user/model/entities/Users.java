@@ -35,6 +35,8 @@ public class Users extends Auditoria implements UserDetails {
 
     private String password;
 
+    private  UserStatus status;
+
     @Indexed
     private String firebaseUid;
 

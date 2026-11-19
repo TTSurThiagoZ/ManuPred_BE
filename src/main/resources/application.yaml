@@ -15,6 +15,34 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB
       resolve-lazily: false
+  # Servidor MCP: expõe os métodos dos controllers anotados com @McpTool para agentes de IA.
+  # Endereço: POST/GET {servidor}/mcp (Streamable HTTP). Exige o mesmo token JWT da API no
+  # cabeçalho "Authorization: Bearer <token>"; cada ferramenta respeita a role do usuário.
+  ai:
+    mcp:
+      server:
+        enabled: ${MCP_ENABLED:true}
+        name: kipper-manupred
+        version: 1.0.0
+        type: SYNC
+        protocol: STREAMABLE
+        instructions: >-
+          Servidor do ManuPred (Kipper), sistema de chamados de manutenção predial.
+          Comece por 'usuario_atual' para saber a role do usuário (ADMIN_ROLE, SUPERVISOR_ROLE,
+          FUNCIONARIO_ROLE ou USER_ROLE); várias ferramentas são restritas por role.
+          Para abrir um chamado, obtenha o tipoId com 'listar_tipos_chamado' e o localId com 'listar_locais'.
+          Fluxo de um chamado: ABERTO -> EM_ANDAMENTO -> CONCLUIDO ('concluir_chamado', técnico)
+          -> FINALIZADA ('validar_chamado', solicitante).
+          Ferramentas de exclusão são irreversíveis: confirme com o usuário antes de usá-las.
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
+        annotation-scanner:
+          enabled: true
+        streamable-http:
+          mcp-endpoint: /mcp
   security:
     oauth2:
       client:
