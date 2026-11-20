@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Configuration;
                         | `FUNCIONARIO_ROLE` | Tudo do usuário + ver todos os chamados; mudar status, concluir e gerenciar ajudantes **nos chamados em que é técnico ou ajudante**; resumo com IA. |
                         | `SUPERVISOR_ROLE` | Tudo do funcionário **em qualquer chamado** + atribuir técnico, mudar prioridade, marcar urgência, rejeitar e busca em linguagem natural com IA. |
                         | `ADMIN_ROLE` | Tudo + tipos, setores, locais, usuários e perfis, relatórios, auditoria, excluir qualquer chamado e reabrir chamados encerrados. |
+                        | `SUPER_ADMIN_ROLE` | Tudo do admin + importar usuários por CSV e conceder/remover a role `SUPER_ADMIN_ROLE`. |
 
                         Na primeira inicialização, se não existir nenhum admin, o sistema cria `admin@manupred.com`
                         com a senha da variável `ADMIN_PASSWORD`.

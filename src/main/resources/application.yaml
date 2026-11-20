@@ -15,6 +15,35 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB
       resolve-lazily: false
+  # Servidor MCP: expõe os métodos dos controllers anotados com @McpTool para agentes de IA.
+  # Endereço: POST/GET {servidor}/mcp (Streamable HTTP). Exige o mesmo token JWT da API no
+  # cabeçalho "Authorization: Bearer <token>"; cada ferramenta respeita a role do usuário.
+  # (Enquanto app.mcp.acesso-livre estiver ligado, o token é opcional; ver mais abaixo.)
+  ai:
+    mcp:
+      server:
+        enabled: ${MCP_ENABLED:true}
+        name: kipper-manupred
+        version: 1.0.0
+        type: SYNC
+        protocol: STREAMABLE
+        instructions: >-
+          Servidor do ManuPred (Kipper), sistema de chamados de manutenção predial.
+          Comece por 'usuario_atual' para saber a role do usuário (ADMIN_ROLE, SUPERVISOR_ROLE,
+          FUNCIONARIO_ROLE ou USER_ROLE); várias ferramentas são restritas por role.
+          Para abrir um chamado, obtenha o tipoId com 'listar_tipos_chamado' e o localId com 'listar_locais'.
+          Fluxo de um chamado: ABERTO -> EM_ANDAMENTO -> CONCLUIDO ('concluir_chamado', técnico)
+          -> FINALIZADA ('validar_chamado', solicitante).
+          Ferramentas de exclusão são irreversíveis: confirme com o usuário antes de usá-las.
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
+        annotation-scanner:
+          enabled: true
+        streamable-http:
+          mcp-endpoint: /mcp
   security:
     oauth2:
       client:
@@ -88,6 +117,19 @@ app:
     nome: ${ADMIN_NAME:Administrador}
     email: ${ADMIN_EMAIL:admin@manupred.com}
     password: ${ADMIN_PASSWORD:}
+  # Primeiro SUPER_ADMIN (único que pode importar usuários por CSV). Só é usado enquanto não
+  # existir nenhum: promove a conta desse e-mail ou, se não existir, cria com a senha abaixo.
+  super-admin:
+    nome: ${SUPER_ADMIN_NAME:Super Administrador}
+    email: ${SUPER_ADMIN_EMAIL:}
+    password: ${SUPER_ADMIN_PASSWORD:}
+  mcp:
+    # TEMPORÁRIO: com "true", agentes de IA usam o /mcp SEM token, agindo como a conta abaixo
+    # (vazio = primeiro SUPER_ADMIN do banco, senão o primeiro ADMIN). Quem manda JWT válido
+    # continua sendo ele mesmo. Qualquer um que alcance o /mcp vira admin: desligue em produção.
+    acesso-livre:
+      habilitado: ${MCP_ACESSO_LIVRE:true}
+      email: ${MCP_ACESSO_LIVRE_EMAIL:}
   jwt:
     secret: ${JWT_SECRET:TrocarPorUmaChaveAleatoriaDeProducaoComPeloMenos32Caracteres}
     expiracao-minutos: ${JWT_EXPIRACAO_MINUTOS:30}

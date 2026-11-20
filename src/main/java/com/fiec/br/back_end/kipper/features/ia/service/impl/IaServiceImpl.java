@@ -198,7 +198,7 @@ public class IaServiceImpl implements IaService {
         Solicitacao solicitacao = solicitacaoRepository.findById(solicitacaoId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Chamado não encontrado."));
 
-        boolean ehAdmin = usuarioLogado.getRole() == com.fiec.br.back_end.kipper.features.user.model.entities.UserRole.ADMIN_ROLE;
+        boolean ehAdmin = usuarioLogado.getRole().ehAdmin();
         boolean ehFuncionario = usuarioLogado.getRole() == com.fiec.br.back_end.kipper.features.user.model.entities.UserRole.SUPERVISOR_ROLE
                 || usuarioLogado.getRole() == com.fiec.br.back_end.kipper.features.user.model.entities.UserRole.FUNCIONARIO_ROLE;
         // Checagens com null: se o solicitante ou um ajudante foi deletado, a referência vem nula
