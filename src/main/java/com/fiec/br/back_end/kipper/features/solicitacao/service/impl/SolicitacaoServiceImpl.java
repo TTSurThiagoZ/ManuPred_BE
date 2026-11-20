@@ -463,15 +463,15 @@ public class SolicitacaoServiceImpl implements SolicitacaoService {
     }
 
     private boolean isAdmin(Users u) {
-        return u.getRole() == UserRole.ADMIN_ROLE;
+        return u.getRole().ehAdmin();
     }
 
     private boolean isSupervisorOuAdmin(Users u) {
-        return u.getRole() == UserRole.ADMIN_ROLE || u.getRole() == UserRole.SUPERVISOR_ROLE;
+        return u.getRole().ehSupervisor();
     }
 
     private boolean isEquipe(Users u) {
-        return isSupervisorOuAdmin(u) || u.getRole() == UserRole.FUNCIONARIO_ROLE;
+        return u.getRole().ehFuncionario();
     }
 
     private void verificarPodeAtuar(Users autor, Solicitacao s) {

@@ -33,10 +33,20 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.admin.password:}")
     private String adminPassword;
 
+    @Value("${app.super-admin.nome:Super Administrador}")
+    private String superAdminNome;
+
+    @Value("${app.super-admin.email:}")
+    private String superAdminEmail;
+
+    @Value("${app.super-admin.password:}")
+    private String superAdminPassword;
+
     @Override
     public void run(String... args) {
         criarTiposIniciais();
         criarAdminInicial();
+        criarSuperAdminInicial();
     }
 
     private void criarTiposIniciais() {
@@ -95,5 +105,38 @@ public class DataInitializer implements CommandLineRunner {
                 .role(UserRole.ADMIN_ROLE)
                 .build());
         log.info("Admin inicial criado: {}", adminEmail);
+    }
+
+    /**
+     * O SUPER_ADMIN não pode ser concedido por um ADMIN comum, então o primeiro precisa vir daqui.
+     * Só age quando não há nenhum SUPER_ADMIN e SUPER_ADMIN_EMAIL está definida: se o e-mail já tem
+     * conta, ela é promovida (a senha não muda); senão, a conta é criada com SUPER_ADMIN_PASSWORD.
+     */
+    private void criarSuperAdminInicial() {
+        if (superAdminEmail == null || superAdminEmail.isBlank()) return;
+        if (userRepository.existsByRole(UserRole.SUPER_ADMIN_ROLE)) return;
+
+        Optional<Users> existente = userRepository.findByEmail(superAdminEmail);
+        if (existente.isPresent()) {
+            Users u = existente.get();
+            u.setRole(UserRole.SUPER_ADMIN_ROLE);
+            userRepository.save(u);
+            log.info("Usuário {} promovido a SUPER_ADMIN.", superAdminEmail);
+            return;
+        }
+
+        if (superAdminPassword == null || superAdminPassword.isBlank()) {
+            log.warn("SUPER_ADMIN_EMAIL={} não tem conta e SUPER_ADMIN_PASSWORD não foi definida: "
+                    + "SUPER_ADMIN inicial NÃO criado.", superAdminEmail);
+            return;
+        }
+
+        userRepository.save(Users.builder()
+                .name(superAdminNome)
+                .email(superAdminEmail)
+                .password(passwordEncoder.encode(superAdminPassword))
+                .role(UserRole.SUPER_ADMIN_ROLE)
+                .build());
+        log.info("SUPER_ADMIN inicial criado: {}", superAdminEmail);
     }
 }

@@ -2,6 +2,7 @@ package com.fiec.br.back_end.kipper.features.user.service;
 
 import com.fiec.br.back_end.kipper.features.auth.models.dto.TokenResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.CreateUserRequestDTO;
+import com.fiec.br.back_end.kipper.features.user.model.dto.ImportacaoUsuariosResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.dto.UserResponseDTO;
 import com.fiec.br.back_end.kipper.features.user.model.entities.UserRole;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,4 +19,7 @@ public interface UserService extends UserDetailsService {
     TokenResponseDTO verifyAndAuthenticateFirebaseToken(String firebaseToken);
     UserResponseDTO atualizarRole(UUID id, UserRole role);
     void atualizarFcmToken(String email, String fcmToken);
+
+    /** Cria vários usuários a partir do conteúdo de um arquivo CSV (veja o formato no UserController). */
+    ImportacaoUsuariosResponseDTO importarUsuariosCsv(byte[] conteudoCsv);
 }

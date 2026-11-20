@@ -1,5 +1,7 @@
 package com.fiec.br.back_end.kipper.config;
 
+import com.fiec.br.back_end.kipper.features.user.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.context.annotation.Configuration;
@@ -28,10 +30,21 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final OAuth2SuccessHandler oauth2SuccessHandler;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, AuthenticationProvider authenticationProvider, OAuth2SuccessHandler oauth2SuccessHandler) {
+    private final UserRepository userRepository;
+
+    // TEMPORÁRIO: libera o /mcp para agentes de IA sem token (ver McpAcessoLivreFilter)
+    @Value("${app.mcp.acesso-livre.habilitado:false}")
+    private boolean mcpAcessoLivre;
+
+    @Value("${app.mcp.acesso-livre.email:}")
+    private String mcpAcessoLivreEmail;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, AuthenticationProvider authenticationProvider,
+                          OAuth2SuccessHandler oauth2SuccessHandler, UserRepository userRepository) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationProvider = authenticationProvider;
         this.oauth2SuccessHandler = oauth2SuccessHandler;
+        this.userRepository = userRepository;
     }
 
     @Bean
@@ -41,6 +54,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/mcp/**").permitAll()
                         .requestMatchers("/api/v1/users/auth/firebase").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/swagger-theme.css", "/swagger-filtro.js").permitAll()
@@ -65,6 +79,10 @@ public class SecurityConfig {
                         .successHandler(oauth2SuccessHandler)
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        if (mcpAcessoLivre) {
+            http.addFilterAfter(new McpAcessoLivreFilter(userRepository, mcpAcessoLivreEmail), JwtAuthFilter.class);
+        }
 
         return http.build();
     }

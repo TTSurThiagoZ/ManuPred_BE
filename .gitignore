@@ -52,3 +52,6 @@ repomix-output.xml
 **/chaves_acesso*.csv
 **/*accessKeys*.csv
 **/*credentials*.csv
+
+# Credenciais locais de desenvolvimento (nunca commitar)
+*.local.env

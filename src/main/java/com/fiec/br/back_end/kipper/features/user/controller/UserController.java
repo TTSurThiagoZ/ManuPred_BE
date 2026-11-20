@@ -12,11 +12,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -110,11 +114,12 @@ public class UserController {
 
     @Operation(
             summary = "Alterar role de um usuário (ADMIN)",
-            description = "Permite trocar entre ADMIN_ROLE, SUPERVISOR_ROLE, FUNCIONARIO_ROLE e USER_ROLE."
+            description = "Permite trocar entre SUPER_ADMIN_ROLE, ADMIN_ROLE, SUPERVISOR_ROLE, FUNCIONARIO_ROLE e USER_ROLE. "
+                    + "Conceder ou remover SUPER_ADMIN_ROLE exige ser SUPER_ADMIN."
     )
     @McpTool(name = "alterar_role_usuario",
-            description = "Altera a role (permissão) de um usuário: ADMIN_ROLE, SUPERVISOR_ROLE, FUNCIONARIO_ROLE "
-                    + "ou USER_ROLE. Apenas ADMIN.",
+            description = "Altera a role (permissão) de um usuário: SUPER_ADMIN_ROLE, ADMIN_ROLE, SUPERVISOR_ROLE, "
+                    + "FUNCIONARIO_ROLE ou USER_ROLE. Apenas ADMIN; conceder ou remover SUPER_ADMIN_ROLE exige SUPER_ADMIN.",
             annotations = @McpTool.McpAnnotations(title = "Alterar role do usuário",
                     readOnlyHint = false, destructiveHint = true, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasRole('ADMIN')")
@@ -124,6 +129,55 @@ public class UserController {
             @McpToolParam(description = "Nova role do usuário")
             @RequestBody @Valid RoleUpdateDTO dto) {
         return userService.atualizarRole(id, dto.role());
+    }
+
+    private static final String FORMATO_CSV = """
+            Primeira linha = cabeçalho. Separador "," ou ";". Codificação UTF-8 (ou Windows-1252, como o Excel salva).
+            Colunas (a ordem não importa, maiúsculas/minúsculas e acentos são ignorados):
+            - email (obrigatória)
+            - password ou senha (obrigatória, mínimo 6 caracteres)
+            - status: DELETED, NOT_CONFIRMED ou CONFIRMED (vazio = NOT_CONFIRMED)
+            - rm
+            - setor
+            - userType ou tipo: PROFESSOR ou COORDENADOR (pode ficar vazio)
+            - nome (opcional; vazio = parte do e-mail antes do @)
+            Todos entram com a role USER_ROLE. Máximo de 1000 linhas por arquivo.
+            Linhas com erro (e-mail repetido ou já cadastrado, senha curta, valor inválido) não são criadas e
+            aparecem em 'erros'; as demais são criadas normalmente.""";
+
+    @Operation(
+            summary = "Importar usuários por CSV (SUPER_ADMIN)",
+            description = "Cria vários usuários de uma vez a partir de um arquivo CSV.\n\n" + FORMATO_CSV
+                    + "\n\nExemplo:\n\n    email;password;status;rm;setor;userType\n"
+                    + "    maria@escola.com;Senha123;CONFIRMED;12345;Informática;PROFESSOR",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Arquivo processado; veja 'criados' e 'erros'"),
+                    @ApiResponse(responseCode = "400", description = "Arquivo vazio, cabeçalho inválido ou linhas demais"),
+                    @ApiResponse(responseCode = "403", description = "Usuário não é SUPER_ADMIN")
+            }
+    )
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping(value = "/importar-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportacaoUsuariosResponseDTO importarCsv(@RequestParam("arquivo") MultipartFile arquivo) throws IOException {
+        if (arquivo == null || arquivo.isEmpty()) {
+            throw new IllegalArgumentException("Envie um arquivo CSV no campo 'arquivo'.");
+        }
+        return userService.importarUsuariosCsv(arquivo.getBytes());
+    }
+
+    /** Versão de {@link #importarCsv} para agentes de IA (MCP), que recebe o CSV como texto. */
+    @McpTool(name = "importar_usuarios_csv",
+            description = "Cria vários usuários de uma vez a partir do conteúdo de um CSV (texto). Apenas SUPER_ADMIN. "
+                    + "Devolve os usuários criados e as linhas com erro.\n" + FORMATO_CSV,
+            annotations = @McpTool.McpAnnotations(title = "Importar usuários por CSV",
+                    readOnlyHint = false, destructiveHint = false, idempotentHint = false, openWorldHint = false))
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ImportacaoUsuariosResponseDTO importarCsvTexto(
+            @McpToolParam(description = "Conteúdo completo do CSV, com a linha de cabeçalho") String conteudoCsv) {
+        if (conteudoCsv == null || conteudoCsv.isBlank()) {
+            throw new IllegalArgumentException("O conteúdo do CSV está vazio.");
+        }
+        return userService.importarUsuariosCsv(conteudoCsv.getBytes(StandardCharsets.UTF_8));
     }
 
     private Users getUsuarioLogado() {

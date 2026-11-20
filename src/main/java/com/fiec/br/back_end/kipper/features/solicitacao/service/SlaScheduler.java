@@ -79,7 +79,7 @@ public class SlaScheduler {
                 notificacaoService.enviar(s.getTecnicoResponsavel(),
                         "Chamado URGENTE: SLA estourado", s.getTitulo(), s.getId());
             } else {
-                List<Users> supervisores = userRepository.findByRoleIn(List.of(UserRole.SUPERVISOR_ROLE, UserRole.ADMIN_ROLE));
+                List<Users> supervisores = userRepository.findByRoleIn(List.of(UserRole.SUPERVISOR_ROLE, UserRole.ADMIN_ROLE, UserRole.SUPER_ADMIN_ROLE));
                 for (Users sup : supervisores) {
                     notificacaoService.enviar(sup,
                             "Chamado sem técnico URGENTE: SLA estourado", s.getTitulo(), s.getId());

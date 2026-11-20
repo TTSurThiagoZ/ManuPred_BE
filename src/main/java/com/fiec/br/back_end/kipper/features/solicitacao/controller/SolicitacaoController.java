@@ -4,7 +4,6 @@ import com.fiec.br.back_end.kipper.features.solicitacao.model.dto.*;
 import com.fiec.br.back_end.kipper.features.solicitacao.model.enums.PrioridadeSolicitacao;
 import com.fiec.br.back_end.kipper.features.solicitacao.model.enums.StatusSolicitacao;
 import com.fiec.br.back_end.kipper.features.solicitacao.service.SolicitacaoService;
-import com.fiec.br.back_end.kipper.features.user.model.entities.UserRole;
 import com.fiec.br.back_end.kipper.features.user.model.entities.Users;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,13 +46,12 @@ public class SolicitacaoController {
         throw new AccessDeniedException("Usuário não autenticado.");
     }
 
-    private boolean isAdmin(Users u) { return u.getRole() == UserRole.ADMIN_ROLE; }
+    private boolean isAdmin(Users u) { return u.getRole().ehAdmin(); }
     private boolean isSupervisor(Users u) {
-        return u.getRole() == UserRole.ADMIN_ROLE || u.getRole() == UserRole.SUPERVISOR_ROLE;
+        return u.getRole().ehSupervisor();
     }
     private boolean isFuncionario(Users u) {
-        return u.getRole() == UserRole.ADMIN_ROLE || u.getRole() == UserRole.SUPERVISOR_ROLE
-                || u.getRole() == UserRole.FUNCIONARIO_ROLE;
+        return u.getRole().ehFuncionario();
     }
 
     /**

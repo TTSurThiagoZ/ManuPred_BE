@@ -37,6 +37,12 @@ public class Users extends Auditoria implements UserDetails {
 
     private  UserStatus status;
 
+    private String rm;
+
+    private String setor;
+
+    private UserType userType;
+
     @Indexed
     private String firebaseUid;
 
@@ -49,7 +55,12 @@ public class Users extends Auditoria implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        if (this.role == UserRole.ADMIN_ROLE) {
+        if (this.role == UserRole.SUPER_ADMIN_ROLE) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPERVISOR"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_FUNCIONARIO"));
+        } else if (this.role == UserRole.ADMIN_ROLE) {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             authorities.add(new SimpleGrantedAuthority("ROLE_SUPERVISOR"));
             authorities.add(new SimpleGrantedAuthority("ROLE_FUNCIONARIO"));
